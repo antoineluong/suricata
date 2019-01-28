@@ -500,7 +500,7 @@ static int AddStringData(idmef_alert_t *alert, const char *meaning, const char *
         SCReturnInt(ret);
     }
 
-    ret = prelude_string_ncat(p_str, meaning, strlen(meaning));
+    ret = prelude_string_set_ref(p_str, meaning);
     if (ret < 0) {
         idmef_additional_data_destroy(ad);
         SCReturnInt(ret);
@@ -659,16 +659,19 @@ static int JsonToAdditionalData(const char * key, json_t * value, idmef_alert_t 
             }
             ret = JsonToAdditionalData(local_key, value_js, alert);
         }
-    } else if (json_is_integer(value)) {
-        ret = AddIntData(alert, key, json_integer_value(value));
-    } else if (json_is_real(value)) {
-        ret = AddRealData(alert, key, json_real_value(value));
-    } else if (json_is_boolean(value)) {
-        ret = AddIntData(alert, key, json_is_true(value));
-    } else if (json_is_string(value)) {
-        ret = AddStringData(alert, key, json_string_value(value));
     } else {
-        ret = AddStringData(alert, key, json_dumps(value, 0));
+        snprintf(local_key, sizeof(local_key), "%s", key);
+        if (json_is_integer(value)) {
+            ret = AddIntData(alert, local_key, json_integer_value(value));
+        } else if (json_is_real(value)) {
+            ret = AddRealData(alert, local_key, json_real_value(value));
+        } else if (json_is_boolean(value)) {
+            ret = AddIntData(alert, local_key, json_is_true(value));
+        } else if (json_is_string(value)) {
+            ret = AddStringData(alert, local_key, json_string_value(value));
+        } else {
+            ret = AddStringData(alert, local_key, json_dumps(value, 0));
+        }
     }
     SCReturnInt(ret);
 }
